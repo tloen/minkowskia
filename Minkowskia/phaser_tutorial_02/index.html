@@ -1,0 +1,258 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>Phaser - Making your first game, part 9</title>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render:render });
+
+function preload() {
+
+    game.load.image('bg', 'assets/bg.png');
+    game.load.image('square', 'assets/Square.png');
+    game.load.image('ground', 'assets/platform.png');
+    game.load.image('winner', 'assets/winner.png');
+    game.load.image('star', 'assets/star.png');
+    game.load.image('dude', 'assets/dude.png');
+    game.load.image('dude2', 'assets/dude2.png');
+    game.load.image('tile', 'assets/tile.png')
+    game.load.image('goal', 'assets/tile.png')
+    game.load.image('enemy', 'assets/enemy.png')
+}
+
+var player;
+var platforms;
+var cursors;
+
+var stars;
+var score = 0;
+var xshiftxt;
+var yshiftxt;
+
+
+var x0 = 150;
+var y0 = 150;
+var s = 300;
+var xshift = 0;
+var yshift = 0;
+var wkey;
+var akey;
+var skey; 
+var dkey;
+var pn
+var ps 
+var pe 
+var pw;
+var t1;
+var enemy;
+var goal;
+
+function split (playersprite) {}
+
+function create() {
+
+
+    wkey = game.input.keyboard.addKey(Phaser.Keyboard.W);
+    akey = game.input.keyboard.addKey(Phaser.Keyboard.A);
+    skey = game.input.keyboard.addKey(Phaser.Keyboard.S);
+    dkey = game.input.keyboard.addKey(Phaser.Keyboard.D);
+    //  We're going to be using physics, so enable the Arcade Physics system
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+
+    //  A simple background for our game
+    var bg = game.add.sprite(0, 0, 'bg');
+    var square = game.add.sprite(x0, y0, 'square');
+    square.scale.setTo(s/500, s/500)
+    //  The platforms group contains the ground and the 2 ledges we can jump on
+    platforms = game.add.group();
+    
+    //  We will enable physics for any object that is created in this group
+    platforms.enableBody = true;
+
+    var goal = game.add.sprite(170, 240, 'goal');
+
+    enemy = game.add.sprite(300, 300, 'enemy');
+    
+    //  Now let's create two ledges
+    var ledge = platforms.create(400, 400, 'tile');
+    ledge.scale.setTo(5, 1);
+    ledge.body.immovable = true;
+
+    ledge = platforms.create(150, 200, 'tile');
+    ledge.scale.setTo(5, 1);
+    ledge.body.immovable = true;
+    
+    ledge = platforms.create(200, 200, 'tile');
+    ledge.scale.setTo(1, 5);
+    ledge.body.immovable = true;
+
+    ledge = platforms.create(150, 250, 'tile');
+    ledge.scale.setTo(6, 1);
+    ledge.body.immovable = true;
+    
+    // The player and its settings
+    player = game.add.sprite(415, game.world.height - 150, 'dude');
+    // copies
+    pn = game.add.sprite(100, game.world.height - 150, 'dude2');
+    ps = game.add.sprite(100, game.world.height - 150, 'dude2');
+    pe = game.add.sprite(100, game.world.height - 150, 'dude2');
+    pw = game.add.sprite(100, game.world.height - 150, 'dude2');
+
+    //  We need to enable physics on the player
+    game.physics.arcade.enable(player);
+    game.physics.arcade.enable(enemy);
+    game.physics.arcade.enable(goal);
+
+    //  Player physics properties. Give the little guy a slight bounce.
+    player.body.bounce.y = 0.2;
+    player.body.gravity.y = 250;
+    enemy.body.velocity.y = -200;
+    
+    //player.body.collideWorldBounds = true;
+
+    //  The score
+    xshiftxt = game.add.text(600, 525, 'xshift: 0', { fontSize: '32px', fill: '#000' });
+    yshiftxt = game.add.text(600, 550, 'yshift: 0', { fontSize: '32px', fill: '#000' });
+
+    //  Our controls.
+    cursors = game.input.keyboard.createCursorKeys();
+    
+    
+}
+function xshift(x, shift)
+{
+    return (((x + shift) - x0) % s) + x0;
+}
+function yshift(y, shift)
+{
+    return (((y + shift) - y0) % s) + y0;
+}
+
+function wrap (spr)
+{
+    if(spr.y < y0)
+    {
+        spr.reset(((((spr.x - xshift) - x0) + s) % s) + x0, y0 + s, 1);
+    }
+    if(spr.y > y0 + s)
+    {
+        spr.reset((((spr.x + xshift) - x0) % s) + x0, y0, 1);
+    }
+    if(spr.x < x0)
+    {
+        spr.reset(x0 + s, ((((spr.y - yshift) - y0) + s) % s) + y0, 1);
+    }
+    if(spr.x > x0 + s)
+    {
+        spr.reset(x0, (((spr.y + yshift) - y0) % s) + y0, 1);
+    }
+}
+
+function die(player, ecks)
+{
+    //player.kill()
+    player.reset(415, 150, 1);
+}
+var z;
+function win (player, enemy)
+{
+    z = game.add.sprite(289, 181, 'winner');
+}
+
+function update() {
+
+    //  Collide the player and the stars with the platforms
+    game.physics.arcade.collide(player, platforms);
+    game.physics.arcade.collide(enemy, platforms);
+    game.physics.arcade.collide(stars, platforms);
+    game.physics.arcade.collide(player, goal, win, null, this);
+    game.physics.arcade.collide(player, enemy, die, null, this);
+
+    if(Math.Random < 0.2)
+    {
+        enemy.velocity.x += -1;
+    }
+    //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+    //game.physics.arcade.overlap(player, stars, collectStar, null, this)
+    //  Reset the players velocity (movement)
+    player.body.velocity.x = 0;
+    if (wkey.isDown)
+    {
+        yshift = (yshift + s + 3) % s
+    }
+    if (skey.isDown)
+    {
+        yshift = (yshift + s - 3) % s
+    }
+    if (dkey.isDown)
+    {
+        xshift = (xshift + s + 3) % s
+    }
+    if (akey.isDown)
+    {
+        xshift = (xshift + s - 3) % s
+    }
+    
+    xshiftxt.text = 'X Twist: ' + xshift;
+    yshiftxt.text = 'Y Twist: ' + yshift;
+    
+    var v1 = player.body.velocity.y;
+    wrap(player);
+    wrap(enemy);
+    enemy.body.velocity.y = -150;
+    player.body.velocity.y = v1;
+    if (cursors.left.isDown)
+    {
+        //  Move to the left
+        player.body.velocity.x = -150;
+    }
+    else if (cursors.right.isDown)
+    {
+        //  Move to the right
+        player.body.velocity.x = 150;
+    }
+    
+    //update copies
+    pn.x = ((s + (player.x + xshift) - x0) % s) + x0;
+    pn.y = player.y - s;
+    
+    ps.x = ((s +(player.x - xshift) - x0) % s) + x0;
+    ps.y = player.y + s;
+    
+    pe.x = player.x + s;
+    pe.y = (((player.y - yshift + s) - y0) % s) + y0;
+    
+    pw.x = player.x - s;
+    pw.y = (((player.y + yshift + s) - y0) % s) + y0;
+    
+    //  Allow the player to jump if they are touching the ground.
+    if (cursors.up.isDown && player.body.touching.down)
+    {
+        player.body.velocity.y = -200;
+    }
+    //  The score
+}
+
+
+function render () {
+
+    // game.debug.text(game.time.physicsElapsed, 32, 32);
+    // game.debug.body(player);
+    game.debug.bodyInfo(player, 16, 24);
+
+}
+
+</script>
+
+</body>
+</html>
